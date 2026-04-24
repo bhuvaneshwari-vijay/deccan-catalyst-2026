@@ -88,7 +88,7 @@ if "greeted" not in st.session_state:
 if not st.session_state.greeted:
     with st.spinner("Starting your session..."):
         response = client.messages.create(
-            model="claude-sonnet-4-5",
+            model="claude-sonnet-4-6",
             max_tokens=1024,
             system=SYSTEM_PROMPT,
             messages=[{"role": "user", "content": "Hello, I want to assess my skills."}]
@@ -142,7 +142,7 @@ if prompt := st.chat_input("Type your response here..."):
     with st.chat_message("assistant", avatar="🎯"):
         with st.spinner("Thinking..."):
             response = client.messages.create(
-                model="claude-sonnet-4-5",
+                model="claude-sonnet-4-6",
                 max_tokens=2048,
                 system=SYSTEM_PROMPT,
                 messages=api_messages
