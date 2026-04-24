@@ -84,13 +84,9 @@ if "chat" not in st.session_state:
 
 # ── Auto-greeting on first load ───────────────────────────────────────────────
 if not st.session_state.greeted:
-    with st.spinner("Starting your session..."):
-        response = st.session_state.chat.send_message(
-            "Hello, I want to assess my skills for a job application."
-        )
-        greeting = response.text
-        st.session_state.messages.append({"role": "assistant", "content": greeting})
-        st.session_state.greeted = True
+    greeting = "👋 Welcome to **SkillSense AI**! I'm here to assess your skills and build you a personalised learning plan.\n\nTo get started, please **paste the Job Description** you're targeting below."
+    st.session_state.messages.append({"role": "assistant", "content": greeting})
+    st.session_state.greeted = True
 
 # ── Status indicator ──────────────────────────────────────────────────────────
 stage_labels = {
