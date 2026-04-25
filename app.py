@@ -137,7 +137,7 @@ if prompt := st.chat_input("Type your response here..."):
         with st.spinner("Thinking..."):
             try:
                 response = client.chat.completions.create(
-                    model="google/gemini-2.0-flash-exp:free",
+                    model="openrouter/auto",
                     max_tokens=3000,
                     messages=[{"role": "system", "content": SYSTEM_PROMPT}] + api_messages
                 )
