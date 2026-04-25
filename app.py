@@ -1,5 +1,5 @@
 import streamlit as st
-import anthropic
+from openai import OpenAI
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -77,7 +77,10 @@ IMPORTANT RULES:
 - Focus on adjacent skills the candidate can realistically learn"""
 
 # ── Anthropic client ──────────────────────────────────────────────────────────
-client = anthropic.Anthropic(api_key=st.secrets["ANTHROPIC_API_KEY"])
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=st.secrets["OPENROUTER_API_KEY"]
+)
 
 # ── Session state ─────────────────────────────────────────────────────────────
 if "messages" not in st.session_state:
@@ -133,13 +136,12 @@ if prompt := st.chat_input("Type your response here..."):
     with st.chat_message("assistant", avatar="🎯"):
         with st.spinner("Thinking..."):
             try:
-                response = client.messages.create(
-                    model="claude-sonnet-4-6",
-                    max_tokens=3000,
-                    system=SYSTEM_PROMPT,
-                    messages=api_messages
-                )
-                reply = response.content[0].text
+                response = client.chat.completions.create(
+    model="meta-llama/llama-3.3-70b-instruct:free",
+    max_tokens=3000,
+    messages=[{"role": "system", "content": SYSTEM_PROMPT}] + api_messages
+)
+reply = response.choices[0].message.content
                 st.markdown(reply)
             except Exception as e:
                 reply = f"⚠️ Error: {str(e)}"
