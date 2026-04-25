@@ -64,23 +64,25 @@ PERSONALISED LEARNING PLAN:
 • Resource 1: [specific free resource with URL if possible]
 • Resource 2: [specific free resource]
 • First step TODAY: [one concrete action]
-CRITICAL FORMATTING RULES FOR LEARNING PLAN:
-- Use NO asterisks, NO bold, NO markdown formatting of any kind
-- Use plain bullet points (•) only
-- No ** or * symbols anywhere
-- Write in clean plain text that looks good in an email
 
-- STAGE 7: After the learning plan, say exactly this: "Please share your email address and I will send you this complete report!" Once they provide their email, say exactly this: "Your personalised assessment report has been sent to your email! 🎉 Best of luck with your application!" — then stop. Do NOT ask again if they want it sent. Do NOT say "Would you like me to send". Just ask for the email directly.
+- STAGE 7: After the learning plan, say exactly this: "Please share your email address and I will send you this complete report!" Once they provide their email, say exactly this: "Your personalised assessment report has been sent to your email! Best of luck with your application!" then stop completely.
 
 IMPORTANT RULES:
 - Always show gap analysis AND learning plan in the SAME message — never split them
 - Keep learning plan concise — maximum 3 resources per skill
 - DO NOT use markdown tables anywhere
+- DO NOT use ** or * or any markdown formatting
+- Use plain bullet points only
 - Ask real assessment questions like "walk me through how you would write a window function" not "rate yourself 1-5"
 - Be encouraging and warm throughout
 - Use the candidate's name if they mention it
 - Score each skill: Strong (4-5/5), Developing (2-3/5), Gap (1/5)
-- Focus on adjacent skills the candidate can realistically learn"""
+- Focus on adjacent skills the candidate can realistically learn
+- CRITICAL FORMATTING RULES FOR LEARNING PLAN:
+  - Use NO asterisks, NO bold, NO markdown formatting of any kind
+  - Use plain bullet points only
+  - No ** or * symbols anywhere
+  - Write in clean plain text that looks good in an email"""
 
 # ── OpenRouter client ─────────────────────────────────────────────────────────
 client = OpenAI(
@@ -160,15 +162,15 @@ if prompt := st.chat_input("Type your response here..."):
     if any(phrase in reply.lower() for phrase in ["learning plan", "personalised learning", "email"]):
         st.session_state.stage = "complete"
 
-    # Send email via n8n if user just provided their email
-    if st.session_state.stage == "complete" and "@" in prompt:
-        learning_plan = next(
-    (m["content"] for m in reversed(st.session_state.messages)
-     if "SKILL GAP ANALYSIS" in m.get("content", "")), ""
-)
-# Clean up the report — remove the email request line
-learning_plan = learning_plan_raw.split("Please share your email")[0].strip()
-learning_plan = learning_plan.split("Would you like me to send")[0].strip()
+    # Send email via n8n webhook if user provided email
+    if st.session_state.stage == "complete" and "@" in prompt and "." in prompt:
+        learning_plan_raw = next(
+            (m["content"] for m in reversed(st.session_state.messages)
+             if "SKILL GAP ANALYSIS" in m.get("content", "")), ""
+        )
+        # Clean up — remove email request line at the end
+        learning_plan = learning_plan_raw.split("Please share your email")[0].strip()
+        learning_plan = learning_plan.split("Would you like me to send")[0].strip()
         try:
             requests.post(
                 "https://bhuvana-vijay.app.n8n.cloud/webhook/skillsense",
@@ -176,9 +178,10 @@ learning_plan = learning_plan.split("Would you like me to send")[0].strip()
                     "email": prompt,
                     "report": learning_plan,
                     "name": "SkillSense AI Assessment Report"
-                }
+                },
+                timeout=5
             )
-        except:
+        except Exception:
             pass
 
     st.rerun()
@@ -209,3 +212,4 @@ with st.sidebar:
     st.divider()
     st.caption("Built for Deccan AI Catalyst Hackathon 2026")
     st.caption("By Bhuvaneshwari Vijay Raghavan")
+
