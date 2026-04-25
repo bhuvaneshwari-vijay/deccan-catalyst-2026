@@ -1,6 +1,5 @@
 import streamlit as st
-from google import genai
-from google.genai import types
+import anthropic
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -48,37 +47,37 @@ CONVERSATION FLOW — follow this strictly:
 - STAGE 2: After JD received, ask them to paste their Resume
 - STAGE 3: Confirm the skills you have extracted from the JD. List them clearly. Tell the user you will now assess each one.
 - STAGE 4: Assess skills one by one. Ask 2-3 real questions per skill (not self-ratings). Be conversational, encouraging, and professional.
-- STAGE 5: After all skills assessed, show the Gap Analysis in a clear table format
-- STAGE 6: Generate the Personalised Learning Plan with specific free resources, time estimates per skill, and priority order
-- STAGE 7: Ask for their email to send the report
-IMPORTANT: After showing the gap analysis, immediately show the complete learning plan in the SAME message. Do not split into multiple messages. Keep the learning plan concise — maximum 3 bullet points per skill gap.
+- STAGE 5: After all skills assessed, show the Gap Analysis using this exact format — no markdown tables:
 
-ASSESSMENT RULES:
-- Ask real questions like "Can you walk me through how you would write a VLOOKUP?" not "Rate yourself 1-5"
-- Be encouraging and conversational — this is a coaching session, not an exam
-- Score each skill internally: Strong (4-5/5), Developing (2-3/5), Gap (1/5)
-- Focus on adjacent skills — what can this person REALISTICALLY learn given what they already know?
-
-LEARNING PLAN FORMAT:
-For each gap skill, provide:
-- Priority level (High/Medium/Low)
-- Estimated time to reach job-ready level
-- 2-3 specific free resources (YouTube channels, Coursera free courses, documentation, etc.)
-- A practical first step they can take TODAY
-
-OUTPUT STYLE:
-- Use emojis sparingly but effectively
-- DO NOT use markdown tables. Instead format the gap analysis like this:
 SKILL GAP ANALYSIS:
-- SQL — Strong (5/5) ✅
-- Python — Developing (2/5) ⚠️
-- Statistics — Gap (1/5) ❌
-- Be warm, encouraging, and specific
-- Always use the candidate's name if they mention it
-- Keep responses focused — do not overwhelm with text"""
+• [Skill] — [Level] ([score]/5) [emoji]
 
-# ── Gemini client ─────────────────────────────────────────────────────────────
-client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+Use ✅ for Strong (4-5/5), ⚠️ for Developing (2-3/5), ❌ for Gap (1/5)
+
+- STAGE 6: Immediately in the SAME message after the gap analysis, show the full Personalised Learning Plan using this format:
+
+PERSONALISED LEARNING PLAN:
+
+[Skill Name] — Priority: [High/Medium/Low]
+• Time to job-ready: [X weeks]
+• Resource 1: [specific free resource with URL if possible]
+• Resource 2: [specific free resource]
+• First step TODAY: [one concrete action]
+
+- STAGE 7: After the learning plan, ask for their email to send the report
+
+IMPORTANT RULES:
+- Always show gap analysis AND learning plan in the SAME message — never split them
+- Keep learning plan concise — maximum 3 resources per skill
+- DO NOT use markdown tables anywhere
+- Ask real assessment questions like "walk me through how you would write a window function" not "rate yourself 1-5"
+- Be encouraging and warm throughout
+- Use the candidate's name if they mention it
+- Score each skill: Strong (4-5/5), Developing (2-3/5), Gap (1/5)
+- Focus on adjacent skills the candidate can realistically learn"""
+
+# ── Anthropic client ──────────────────────────────────────────────────────────
+client = anthropic.Anthropic(api_key=st.secrets["ANTHROPIC_API_KEY"])
 
 # ── Session state ─────────────────────────────────────────────────────────────
 if "messages" not in st.session_state:
@@ -124,26 +123,23 @@ if prompt := st.chat_input("Type your response here..."):
     elif st.session_state.stage in ["resume_received", "assessing"]:
         st.session_state.stage = "assessing"
 
-    # Build conversation history for Gemini
-    history = []
-    for m in st.session_state.messages[:-1]:  # exclude latest user message
-        role = "user" if m["role"] == "user" else "model"
-        history.append({"role": role, "parts": [{"text": m["content"]}]})
+    # Build messages for Claude
+    api_messages = [
+        {"role": m["role"], "content": m["content"]}
+        for m in st.session_state.messages
+    ]
 
-    # Call Gemini API
+    # Call Claude API
     with st.chat_message("assistant", avatar="🎯"):
         with st.spinner("Thinking..."):
             try:
-                response = client.models.generate_content(
-                    model="gemini-2.5-flash",
-                    contents=history + [{"role": "user", "parts": [{"text": prompt}]}],
-                    config=types.GenerateContentConfig(
-                        system_instruction=SYSTEM_PROMPT,
-                        max_output_tokens=3000,
-                        temperature=0.7,
-                    )
+                response = client.messages.create(
+                    model="claude-sonnet-4-6",
+                    max_tokens=3000,
+                    system=SYSTEM_PROMPT,
+                    messages=api_messages
                 )
-                reply = response.text
+                reply = response.content[0].text
                 st.markdown(reply)
             except Exception as e:
                 reply = f"⚠️ Error: {str(e)}"
@@ -153,7 +149,7 @@ if prompt := st.chat_input("Type your response here..."):
     st.session_state.messages.append({"role": "assistant", "content": reply})
 
     # Check if complete
-    if any(phrase in reply.lower() for phrase in ["learning plan", "personalised plan", "your email"]):
+    if any(phrase in reply.lower() for phrase in ["learning plan", "personalised learning", "email"]):
         st.session_state.stage = "complete"
 
     st.rerun()
