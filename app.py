@@ -52,18 +52,17 @@ Your job is to:
 5. Generate a detailed, personalised learning plan with curated free resources and realistic time estimates
 
 CONVERSATION FLOW — follow this strictly:
-- STAGE 1: Greet the user warmly and ask them to paste the Job Description
-- STAGE 2: After JD received, ask them to paste their Resume
-- STAGE 3: Confirm the skills you have extracted from the JD. List them clearly. Tell the user you will now assess each one.
-- STAGE 4: Assess skills one by one. Ask 2-3 real questions per skill (not self-ratings). Be conversational, encouraging, and professional.
-- STAGE 5: After all skills assessed, show the Gap Analysis using this exact format — no markdown tables:
+- STAGE 1: The user's FIRST message will always be the Job Description. Do NOT ask for it again. Simply say "Got it! I have reviewed the Job Description. Now please paste your Resume so I can compare your profile against the role requirements."
+- STAGE 2: The user's SECOND message will always be their Resume. After receiving it, extract the key skills from the JD and say "Perfect! Based on the Job Description, here are the key skills I will assess: [list skills]. Let us begin the assessment!"
+- STAGE 3: Assess skills one by one. Ask 2-3 real questions per skill (not self-ratings). Be conversational, encouraging, and professional.
+- STAGE 4: After all skills assessed, show the Gap Analysis using this exact format — no markdown tables:
 
 SKILL GAP ANALYSIS:
 • [Skill] — [Level] ([score]/5) [emoji]
 
 Use the word Strong for 4-5/5, Developing for 2-3/5, Gap for 1/5
 
-- STAGE 6: Immediately in the SAME message after the gap analysis, show the full Personalised Learning Plan using this format:
+- STAGE 5: Immediately in the SAME message after the gap analysis, show the full Personalised Learning Plan using this format:
 
 PERSONALISED LEARNING PLAN:
 
@@ -73,10 +72,12 @@ PERSONALISED LEARNING PLAN:
 • Resource 2: [specific free resource]
 • First step TODAY: [one concrete action]
 
-- STAGE 7: After the learning plan, say exactly this one sentence: "Please share your email address and I will send you this complete report!" — nothing else.
-- STAGE 8: Once they provide their email, say exactly this: "Your personalised assessment report has been sent! Best of luck with your application!" — then stop completely. Do not say anything else.
+- STAGE 6: After the learning plan, say exactly this one sentence: "Please share your email address and I will send you this complete report!" — nothing else.
+- STAGE 7: Once they provide their email, say exactly this: "Your personalised assessment report has been sent! Best of luck with your application!" — then stop completely. Do not say anything else.
 
 IMPORTANT RULES:
+- The first user message IS the Job Description — never ask for it again
+- The second user message IS the Resume — never ask for it again
 - Always show gap analysis AND learning plan in the SAME message — never split them
 - Keep learning plan concise — maximum 3 resources per skill
 - DO NOT use markdown tables anywhere
@@ -105,17 +106,17 @@ if "messages" not in st.session_state:
 
 # ── Auto-greeting (static — no API call) ─────────────────────────────────────
 if not st.session_state.greeted:
-    greeting = "👋 Welcome to **SkillSense AI**! I'm here to assess your skills and build you a personalised learning plan.\n\nTo get started, please **paste the Job Description** you're targeting below."
+    greeting = "👋 Hi there! Welcome to **SkillSense AI**!\n\nI'm your personal career coach — I'll assess your skills against a Job Description and build you a personalised learning plan.\n\n**Ready to get started? Paste the Job Description below!** 🚀"
     st.session_state.messages.append({"role": "assistant", "content": greeting})
     st.session_state.greeted = True
 
 # ── Status indicator ──────────────────────────────────────────────────────────
 stage_labels = {
-    "start": "📋 Waiting for Job Description",
-    "jd_received": "📄 Waiting for Resume",
-    "resume_received": "🔍 Extracting Skills...",
+    "start": "📋 Paste your Job Description below to begin",
+    "jd_received": "📄 Great! Now paste your Resume",
+    "resume_received": "🔍 Assessing your skills...",
     "assessing": "💬 Assessment in Progress",
-    "complete": "✅ Assessment Complete",
+    "complete": "✅ Assessment Complete — check your email!",
     "done": "📧 Report Sent Successfully!"
 }
 current_label = stage_labels.get(st.session_state.stage, "💬 In Progress")
@@ -157,16 +158,17 @@ if prompt := st.chat_input("Type your response here..."):
     with st.chat_message("user", avatar="👤"):
         st.markdown(prompt)
 
-    # Update stage
-    if st.session_state.stage == "start" and len(prompt) > 100:
+    # Update stage based on message count
+    user_messages = [m for m in st.session_state.messages if m["role"] == "user"]
+    if len(user_messages) == 1:
         st.session_state.stage = "jd_received"
-    elif st.session_state.stage == "jd_received" and len(prompt) > 100:
+    elif len(user_messages) == 2:
         st.session_state.stage = "resume_received"
-    elif st.session_state.stage in ["resume_received", "assessing"]:
+    elif len(user_messages) > 2 and st.session_state.stage not in ["complete", "done"]:
         st.session_state.stage = "assessing"
 
     # Send email via n8n webhook if user provided email
-    if st.session_state.stage == "complete" and "@" in prompt and "." in prompt and not st.session_state.email_sent:
+    if st.session_state.stage in ["complete", "assessing"] and "@" in prompt and "." in prompt and not st.session_state.email_sent:
         learning_plan_raw = next(
             (m["content"] for m in reversed(st.session_state.messages)
              if "SKILL GAP ANALYSIS" in m.get("content", "")), ""
@@ -211,12 +213,12 @@ if prompt := st.chat_input("Type your response here..."):
     # Save assistant response
     st.session_state.messages.append({"role": "assistant", "content": reply})
 
-    # Check if complete
-    if any(phrase in reply.lower() for phrase in ["learning plan", "personalised learning", "please share your email"]):
+    # Check if assessment complete
+    if "please share your email" in reply.lower():
         st.session_state.stage = "complete"
 
     # Move to done stage after email confirmed sent
-    if st.session_state.email_sent and any(phrase in reply.lower() for phrase in ["sent", "best of luck"]):
+    if st.session_state.email_sent and "best of luck" in reply.lower():
         st.session_state.stage = "done"
 
     st.rerun()
@@ -229,7 +231,7 @@ with st.sidebar:
 2. **Paste your Resume**
 3. **Answer assessment questions**
 4. **Get your Gap Analysis**
-5. **Receive your Learning Plan**
+5. **Receive your Learning Plan by email**
     """)
     st.divider()
     st.markdown("### 💡 Tips")
@@ -248,5 +250,6 @@ with st.sidebar:
     st.divider()
     st.caption("Built for Deccan AI Catalyst Hackathon 2026")
     st.caption("By Bhuvaneshwari Vijay Raghavan")
+
 
 
