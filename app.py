@@ -163,9 +163,12 @@ if prompt := st.chat_input("Type your response here..."):
     # Send email via n8n if user just provided their email
     if st.session_state.stage == "complete" and "@" in prompt:
         learning_plan = next(
-            (m["content"] for m in reversed(st.session_state.messages)
-             if "SKILL GAP ANALYSIS" in m.get("content", "")), ""
-        )
+    (m["content"] for m in reversed(st.session_state.messages)
+     if "SKILL GAP ANALYSIS" in m.get("content", "")), ""
+)
+# Clean up the report — remove the email request line
+learning_plan = learning_plan_raw.split("Please share your email")[0].strip()
+learning_plan = learning_plan.split("Would you like me to send")[0].strip()
         try:
             requests.post(
                 "https://bhuvana-vijay.app.n8n.cloud/webhook/skillsense",
