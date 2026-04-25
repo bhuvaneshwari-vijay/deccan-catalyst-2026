@@ -25,6 +25,14 @@ st.markdown("""
         font-size: 0.9rem;
         color: #3730a3;
     }
+    .success-box {
+        background: #f0fdf4;
+        border-left: 4px solid #22c55e;
+        padding: 20px;
+        border-radius: 8px;
+        margin: 20px 0;
+        text-align: center;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -53,7 +61,7 @@ CONVERSATION FLOW — follow this strictly:
 SKILL GAP ANALYSIS:
 • [Skill] — [Level] ([score]/5) [emoji]
 
-Use ✅ for Strong (4-5/5), ⚠️ for Developing (2-3/5), ❌ for Gap (1/5)
+Use the word Strong for 4-5/5, Developing for 2-3/5, Gap for 1/5
 
 - STAGE 6: Immediately in the SAME message after the gap analysis, show the full Personalised Learning Plan using this format:
 
@@ -65,24 +73,22 @@ PERSONALISED LEARNING PLAN:
 • Resource 2: [specific free resource]
 • First step TODAY: [one concrete action]
 
-- STAGE 7: After the learning plan, say exactly this: "Please share your email address and I will send you this complete report!" Once they provide their email, say exactly this: "Your personalised assessment report has been sent to your email! Best of luck with your application!" then stop completely.
+- STAGE 7: After the learning plan, say exactly this one sentence: "Please share your email address and I will send you this complete report!" — nothing else.
+- STAGE 8: Once they provide their email, say exactly this: "Your personalised assessment report has been sent! Best of luck with your application!" — then stop completely. Do not say anything else.
 
 IMPORTANT RULES:
 - Always show gap analysis AND learning plan in the SAME message — never split them
 - Keep learning plan concise — maximum 3 resources per skill
 - DO NOT use markdown tables anywhere
-- DO NOT use ** or * or any markdown formatting
-- Use plain bullet points only
-- Ask real assessment questions like "walk me through how you would write a window function" not "rate yourself 1-5"
+- DO NOT use ** or * or any markdown bold formatting at all
+- Use plain bullet points (•) only
+- No asterisks anywhere in your response
+- Ask real assessment questions not self-rating questions
 - Be encouraging and warm throughout
 - Use the candidate's name if they mention it
 - Score each skill: Strong (4-5/5), Developing (2-3/5), Gap (1/5)
 - Focus on adjacent skills the candidate can realistically learn
-- CRITICAL FORMATTING RULES FOR LEARNING PLAN:
-  - Use NO asterisks, NO bold, NO markdown formatting of any kind
-  - Use plain bullet points only
-  - No ** or * symbols anywhere
-  - Write in clean plain text that looks good in an email"""
+- Write everything in clean plain text suitable for email"""
 
 # ── OpenRouter client ─────────────────────────────────────────────────────────
 client = OpenAI(
@@ -95,6 +101,7 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
     st.session_state.stage = "start"
     st.session_state.greeted = False
+    st.session_state.email_sent = False
 
 # ── Auto-greeting (static — no API call) ─────────────────────────────────────
 if not st.session_state.greeted:
@@ -108,10 +115,34 @@ stage_labels = {
     "jd_received": "📄 Waiting for Resume",
     "resume_received": "🔍 Extracting Skills...",
     "assessing": "💬 Assessment in Progress",
-    "complete": "✅ Assessment Complete"
+    "complete": "✅ Assessment Complete",
+    "done": "📧 Report Sent Successfully!"
 }
 current_label = stage_labels.get(st.session_state.stage, "💬 In Progress")
 st.markdown(f'<div class="status-box">{current_label}</div>', unsafe_allow_html=True)
+
+# ── Show completion screen if done ───────────────────────────────────────────
+if st.session_state.stage == "done":
+    st.markdown("""
+    <div class="success-box">
+        <h3>🎉 Your Assessment is Complete!</h3>
+        <p>Your personalised learning plan has been sent to your email.</p>
+        <p>Check your inbox — it should arrive within a few seconds.</p>
+    </div>
+    """, unsafe_allow_html=True)
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🔄 Start New Assessment", use_container_width=True):
+            st.session_state.messages = []
+            st.session_state.greeted = False
+            st.session_state.stage = "start"
+            st.session_state.email_sent = False
+            st.rerun()
+    with col2:
+        if st.button("💬 Continue Chatting", use_container_width=True):
+            st.session_state.stage = "complete"
+            st.rerun()
+    st.stop()
 
 # ── Display chat history ──────────────────────────────────────────────────────
 for message in st.session_state.messages:
@@ -133,6 +164,28 @@ if prompt := st.chat_input("Type your response here..."):
         st.session_state.stage = "resume_received"
     elif st.session_state.stage in ["resume_received", "assessing"]:
         st.session_state.stage = "assessing"
+
+    # Send email via n8n webhook if user provided email
+    if st.session_state.stage == "complete" and "@" in prompt and "." in prompt and not st.session_state.email_sent:
+        learning_plan_raw = next(
+            (m["content"] for m in reversed(st.session_state.messages)
+             if "SKILL GAP ANALYSIS" in m.get("content", "")), ""
+        )
+        learning_plan = learning_plan_raw.split("Please share your email")[0].strip()
+        learning_plan = learning_plan.split("Would you like me to send")[0].strip()
+        try:
+            requests.post(
+                "https://bhuvana-vijay.app.n8n.cloud/webhook/skillsense",
+                json={
+                    "email": prompt,
+                    "report": learning_plan,
+                    "name": "SkillSense AI Assessment Report"
+                },
+                timeout=5
+            )
+            st.session_state.email_sent = True
+        except Exception:
+            pass
 
     # Build messages for API
     api_messages = [
@@ -159,30 +212,12 @@ if prompt := st.chat_input("Type your response here..."):
     st.session_state.messages.append({"role": "assistant", "content": reply})
 
     # Check if complete
-    if any(phrase in reply.lower() for phrase in ["learning plan", "personalised learning", "email"]):
+    if any(phrase in reply.lower() for phrase in ["learning plan", "personalised learning", "please share your email"]):
         st.session_state.stage = "complete"
 
-    # Send email via n8n webhook if user provided email
-    if st.session_state.stage == "complete" and "@" in prompt and "." in prompt:
-        learning_plan_raw = next(
-            (m["content"] for m in reversed(st.session_state.messages)
-             if "SKILL GAP ANALYSIS" in m.get("content", "")), ""
-        )
-        # Clean up — remove email request line at the end
-        learning_plan = learning_plan_raw.split("Please share your email")[0].strip()
-        learning_plan = learning_plan.split("Would you like me to send")[0].strip()
-        try:
-            requests.post(
-                "https://bhuvana-vijay.app.n8n.cloud/webhook/skillsense",
-                json={
-                    "email": prompt,
-                    "report": learning_plan,
-                    "name": "SkillSense AI Assessment Report"
-                },
-                timeout=5
-            )
-        except Exception:
-            pass
+    # Move to done stage after email confirmed sent
+    if st.session_state.email_sent and any(phrase in reply.lower() for phrase in ["sent", "best of luck"]):
+        st.session_state.stage = "done"
 
     st.rerun()
 
@@ -208,8 +243,10 @@ with st.sidebar:
         st.session_state.messages = []
         st.session_state.greeted = False
         st.session_state.stage = "start"
+        st.session_state.email_sent = False
         st.rerun()
     st.divider()
     st.caption("Built for Deccan AI Catalyst Hackathon 2026")
     st.caption("By Bhuvaneshwari Vijay Raghavan")
+
 
