@@ -1,5 +1,6 @@
 import streamlit as st
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -32,11 +33,8 @@ st.title("🎯 SkillSense AI")
 st.markdown('<p class="subtitle">AI-Powered Skill Assessment & Personalised Learning Plan Agent</p>', unsafe_allow_html=True)
 st.divider()
 
-# ── Gemini config ─────────────────────────────────────────────────────────────
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-model = genai.GenerativeModel(
-    model_name="models/gemini-1.5-flash",
-    system_instruction="""You are SkillSense AI, an expert career coach and skill assessment agent.
+# ── System prompt ─────────────────────────────────────────────────────────────
+SYSTEM_PROMPT = """You are SkillSense AI, an expert career coach and skill assessment agent.
 
 Your job is to:
 1. Accept a Job Description (JD) and a candidate's Resume from the user
@@ -73,16 +71,17 @@ OUTPUT STYLE:
 - Be warm, encouraging, and specific
 - Always use the candidate's name if they mention it
 - Keep responses focused — do not overwhelm with text"""
-)
+
+# ── Gemini client ─────────────────────────────────────────────────────────────
+client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
 # ── Session state ─────────────────────────────────────────────────────────────
-if "chat" not in st.session_state:
-    st.session_state.chat = model.start_chat(history=[])
+if "messages" not in st.session_state:
     st.session_state.messages = []
     st.session_state.stage = "start"
     st.session_state.greeted = False
 
-# ── Auto-greeting on first load ───────────────────────────────────────────────
+# ── Auto-greeting (static — no API call) ─────────────────────────────────────
 if not st.session_state.greeted:
     greeting = "👋 Welcome to **SkillSense AI**! I'm here to assess your skills and build you a personalised learning plan.\n\nTo get started, please **paste the Job Description** you're targeting below."
     st.session_state.messages.append({"role": "assistant", "content": greeting})
@@ -112,27 +111,43 @@ if prompt := st.chat_input("Type your response here..."):
     with st.chat_message("user", avatar="👤"):
         st.markdown(prompt)
 
-    # Update stage based on conversation progress
-    if st.session_state.stage == "start":
-        if len(prompt) > 100:
-            st.session_state.stage = "jd_received"
-    elif st.session_state.stage == "jd_received":
-        if len(prompt) > 100:
-            st.session_state.stage = "resume_received"
+    # Update stage
+    if st.session_state.stage == "start" and len(prompt) > 100:
+        st.session_state.stage = "jd_received"
+    elif st.session_state.stage == "jd_received" and len(prompt) > 100:
+        st.session_state.stage = "resume_received"
     elif st.session_state.stage in ["resume_received", "assessing"]:
         st.session_state.stage = "assessing"
+
+    # Build conversation history for Gemini
+    history = []
+    for m in st.session_state.messages[:-1]:  # exclude latest user message
+        role = "user" if m["role"] == "user" else "model"
+        history.append({"role": role, "parts": [{"text": m["content"]}]})
 
     # Call Gemini API
     with st.chat_message("assistant", avatar="🎯"):
         with st.spinner("Thinking..."):
-            response = st.session_state.chat.send_message(prompt)
-            reply = response.text
-            st.markdown(reply)
+            try:
+                response = client.models.generate_content(
+                    model="gemini-2.0-flash",
+                    contents=history + [{"role": "user", "parts": [{"text": prompt}]}],
+                    config=types.GenerateContentConfig(
+                        system_instruction=SYSTEM_PROMPT,
+                        max_output_tokens=2048,
+                        temperature=0.7,
+                    )
+                )
+                reply = response.text
+                st.markdown(reply)
+            except Exception as e:
+                reply = "⚠️ I'm experiencing high traffic. Please wait 30 seconds and try again."
+                st.warning(reply)
 
     # Save assistant response
     st.session_state.messages.append({"role": "assistant", "content": reply})
 
-    # Check if assessment complete
+    # Check if complete
     if any(phrase in reply.lower() for phrase in ["learning plan", "personalised plan", "your email"]):
         st.session_state.stage = "complete"
 
@@ -157,7 +172,6 @@ with st.sidebar:
     """)
     st.divider()
     if st.button("🔄 Start Over"):
-        st.session_state.chat = model.start_chat(history=[])
         st.session_state.messages = []
         st.session_state.greeted = False
         st.session_state.stage = "start"
