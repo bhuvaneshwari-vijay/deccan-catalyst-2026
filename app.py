@@ -67,7 +67,11 @@ For each gap skill, provide:
 
 OUTPUT STYLE:
 - Use emojis sparingly but effectively
-- Use markdown tables for gap analysis
+- DO NOT use markdown tables. Instead format the gap analysis like this:
+SKILL GAP ANALYSIS:
+- SQL — Strong (5/5) ✅
+- Python — Developing (2/5) ⚠️
+- Statistics — Gap (1/5) ❌
 - Be warm, encouraging, and specific
 - Always use the candidate's name if they mention it
 - Keep responses focused — do not overwhelm with text"""
