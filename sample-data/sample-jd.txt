@@ -1,0 +1,17 @@
+Data Analyst — TechCorp India (Remote)
+
+We are looking for a Data Analyst to join our growing analytics team.
+
+Requirements:
+- 2+ years experience in data analysis
+- Strong SQL skills — joins, CTEs, window functions
+- Python proficiency — Pandas, NumPy, data cleaning
+- Experience with Power BI or Tableau dashboards
+- Strong communication and storytelling with data
+- Attention to detail and problem-solving mindset
+
+Responsibilities:
+- Build and maintain dashboards for business stakeholders
+- Write SQL queries to extract and analyze data
+- Automate reporting workflows
+- Present insights to non-technical teams
