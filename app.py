@@ -201,7 +201,7 @@ if prompt := st.chat_input("Type your response here..."):
             try:
                 response = client.chat.completions.create(
                     model="openrouter/auto",
-                    max_tokens=3000,
+                    max_tokens=4000,
                     messages=[{"role": "system", "content": SYSTEM_PROMPT}] + api_messages
                 )
                 reply = response.choices[0].message.content
