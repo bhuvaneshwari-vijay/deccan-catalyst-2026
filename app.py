@@ -70,7 +70,7 @@ CRITICAL FORMATTING RULES FOR LEARNING PLAN:
 - No ** or * symbols anywhere
 - Write in clean plain text that looks good in an email
 
-- STAGE 7: After the learning plan, ask for their email address to send them this report. Once they provide it, say "Thank you! Your personalised assessment report has been sent to your email! 🎉 Best of luck with your application!" and end the conversation.
+- STAGE 7: After the learning plan, say exactly this: "Please share your email address and I will send you this complete report!" Once they provide their email, say exactly this: "Your personalised assessment report has been sent to your email! 🎉 Best of luck with your application!" — then stop. Do NOT ask again if they want it sent. Do NOT say "Would you like me to send". Just ask for the email directly.
 
 IMPORTANT RULES:
 - Always show gap analysis AND learning plan in the SAME message — never split them
