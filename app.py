@@ -51,6 +51,7 @@ CONVERSATION FLOW — follow this strictly:
 - STAGE 5: After all skills assessed, show the Gap Analysis in a clear table format
 - STAGE 6: Generate the Personalised Learning Plan with specific free resources, time estimates per skill, and priority order
 - STAGE 7: Ask for their email to send the report
+IMPORTANT: After showing the gap analysis, immediately show the complete learning plan in the SAME message. Do not split into multiple messages. Keep the learning plan concise — maximum 3 bullet points per skill gap.
 
 ASSESSMENT RULES:
 - Ask real questions like "Can you walk me through how you would write a VLOOKUP?" not "Rate yourself 1-5"
@@ -138,7 +139,7 @@ if prompt := st.chat_input("Type your response here..."):
                     contents=history + [{"role": "user", "parts": [{"text": prompt}]}],
                     config=types.GenerateContentConfig(
                         system_instruction=SYSTEM_PROMPT,
-                        max_output_tokens=2048,
+                        max_output_tokens=3000,
                         temperature=0.7,
                     )
                 )
