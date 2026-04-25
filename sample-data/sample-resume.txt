@@ -1,0 +1,22 @@
+Priya Sharma
+priya.sharma@email.com | LinkedIn: linkedin.com/in/priyasharma
+
+SUMMARY
+Data analyst with 2 years experience in SQL and Excel reporting. 
+Currently upskilling in Python and Power BI.
+
+SKILLS
+SQL, Excel, Google Sheets, basic Python (Pandas), Power BI (beginner)
+
+EXPERIENCE
+Junior Data Analyst — ABC Corp (2022-2024)
+- Created weekly sales reports using Excel and SQL
+- Built basic dashboards in Power BI
+- Wrote SQL queries for data extraction
+
+EDUCATION
+B.Com — Delhi University (2022)
+
+CERTIFICATIONS
+SQL Basics — Coursera
+Excel Advanced — Udemy
