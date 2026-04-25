@@ -141,7 +141,7 @@ if prompt := st.chat_input("Type your response here..."):
                 reply = response.text
                 st.markdown(reply)
             except Exception as e:
-                reply = "⚠️ I'm experiencing high traffic. Please wait 30 seconds and try again."
+                reply = f"⚠️ Error: {str(e)}"
                 st.warning(reply)
 
     # Save assistant response
