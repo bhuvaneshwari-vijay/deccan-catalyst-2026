@@ -1,5 +1,6 @@
 import streamlit as st
 from openai import OpenAI
+import requests
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -153,6 +154,24 @@ if prompt := st.chat_input("Type your response here..."):
     # Check if complete
     if any(phrase in reply.lower() for phrase in ["learning plan", "personalised learning", "email"]):
         st.session_state.stage = "complete"
+
+    # Send email via Zapier if user just provided their email
+    if st.session_state.stage == "complete" and "@" in prompt:
+        learning_plan = next(
+            (m["content"] for m in reversed(st.session_state.messages)
+             if "SKILL GAP ANALYSIS" in m.get("content", "")), ""
+        )
+        try:
+            requests.post(
+                "https://hooks.zapier.com/hooks/catch/25722379/uvbe3lb/",
+                json={
+                    "email": prompt,
+                    "report": learning_plan,
+                    "name": "SkillSense AI Assessment Report"
+                }
+            )
+        except:
+            pass
 
     st.rerun()
 
