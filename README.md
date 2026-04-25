@@ -131,7 +131,7 @@ Sample inputs provided in the /sample-data folder.
 
 ## 📊 Demo
 
-🎥 **Demo Video:** [Loom link — coming soon]
+🎥 **Demo Video:** [Watch SkillSense AI in action](https://www.loom.com/share/f430fefda64a42869e1035ee7da9a304)
 
 ### Sample Input
 
