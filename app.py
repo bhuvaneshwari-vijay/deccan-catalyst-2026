@@ -155,7 +155,7 @@ if prompt := st.chat_input("Type your response here..."):
     if any(phrase in reply.lower() for phrase in ["learning plan", "personalised learning", "email"]):
         st.session_state.stage = "complete"
 
-    # Send email via Zapier if user just provided their email
+    # Send email via n8n if user just provided their email
     if st.session_state.stage == "complete" and "@" in prompt:
         learning_plan = next(
             (m["content"] for m in reversed(st.session_state.messages)
@@ -163,7 +163,7 @@ if prompt := st.chat_input("Type your response here..."):
         )
         try:
             requests.post(
-                "https://hooks.zapier.com/hooks/catch/25722379/uvbe3lb/",
+                "https://bhuvana-vijay.app.n8n.cloud/webhook-test/skillsense",
                 json={
                     "email": prompt,
                     "report": learning_plan,
