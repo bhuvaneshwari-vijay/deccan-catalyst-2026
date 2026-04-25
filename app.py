@@ -130,7 +130,7 @@ if prompt := st.chat_input("Type your response here..."):
         with st.spinner("Thinking..."):
             try:
                 response = client.models.generate_content(
-                    model="gemini-1.5-flash",
+                    model="gemini-1.5-flash-latest",
                     contents=history + [{"role": "user", "parts": [{"text": prompt}]}],
                     config=types.GenerateContentConfig(
                         system_instruction=SYSTEM_PROMPT,
