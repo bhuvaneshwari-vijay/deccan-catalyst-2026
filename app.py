@@ -163,7 +163,7 @@ if prompt := st.chat_input("Type your response here..."):
         )
         try:
             requests.post(
-                "https://bhuvana-vijay.app.n8n.cloud/webhook-test/skillsense",
+                "https://bhuvana-vijay.app.n8n.cloud/webhook/skillsense",
                 json={
                     "email": prompt,
                     "report": learning_plan,
