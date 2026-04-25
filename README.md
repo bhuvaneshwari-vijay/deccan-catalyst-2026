@@ -205,7 +205,7 @@ BI Analyst | Data Analytics | GenAI Automation
 - 💻 [GitHub](https://github.com/bhuvaneshwari-vijay)
 - 🎓 Executive PG in Data Analytics — IIT Roorkee
 
-*Built solo over 30 hours for Deccan AI Catalyst Hackathon, April 2026.*
+*Built solo over 32 hours for Deccan AI Catalyst Hackathon, April 2026.*
 
 ---
 
