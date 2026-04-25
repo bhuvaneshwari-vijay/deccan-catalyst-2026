@@ -76,7 +76,7 @@ IMPORTANT RULES:
 - Score each skill: Strong (4-5/5), Developing (2-3/5), Gap (1/5)
 - Focus on adjacent skills the candidate can realistically learn"""
 
-# ── Anthropic client ──────────────────────────────────────────────────────────
+# ── OpenRouter client ─────────────────────────────────────────────────────────
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=st.secrets["OPENROUTER_API_KEY"]
@@ -126,22 +126,22 @@ if prompt := st.chat_input("Type your response here..."):
     elif st.session_state.stage in ["resume_received", "assessing"]:
         st.session_state.stage = "assessing"
 
-    # Build messages for Claude
+    # Build messages for API
     api_messages = [
         {"role": m["role"], "content": m["content"]}
         for m in st.session_state.messages
     ]
 
-    # Call Claude API
+    # Call OpenRouter API
     with st.chat_message("assistant", avatar="🎯"):
         with st.spinner("Thinking..."):
             try:
                 response = client.chat.completions.create(
-    model="meta-llama/llama-3.3-70b-instruct:free",
-    max_tokens=3000,
-    messages=[{"role": "system", "content": SYSTEM_PROMPT}] + api_messages
-)
-reply = response.choices[0].message.content
+                    model="meta-llama/llama-3.3-70b-instruct:free",
+                    max_tokens=3000,
+                    messages=[{"role": "system", "content": SYSTEM_PROMPT}] + api_messages
+                )
+                reply = response.choices[0].message.content
                 st.markdown(reply)
             except Exception as e:
                 reply = f"⚠️ Error: {str(e)}"
